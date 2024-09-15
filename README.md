@@ -8,7 +8,7 @@ The goal of this project is to classify text data from three different languages
 
 The dataset consists of text messages labeled as "Spam" or "Ham" in three languages: English, French, and German.
 
-## Instructions
+##  Workflow
 
 ### 1. Data Loading & Preprocessing
 
