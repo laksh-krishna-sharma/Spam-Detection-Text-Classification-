@@ -2,8 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "mysql+pymysql://root:laksh025@localhost:3306/SpamMessageClassifier"
-
+DATABASE_URL = "mysql+pymysql://user:password@localhost:3306/SpamMessageClassifier"
 
 engine = create_engine(DATABASE_URL)
 
