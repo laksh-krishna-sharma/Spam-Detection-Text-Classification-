@@ -10,17 +10,18 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(128), nullable=False)
 
-    # Define a relationship to the `messages` table
-    messages = relationship("messages", back_populates="user")
+    # Relationship with Messages table
+    messages = relationship("Messages", back_populates="user", cascade="all, delete-orphan")
+
 
 # Messages Model
-class messages(Base):
+class Messages(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
     labels = Column(String(50), nullable=False)
-    text = Column(String(1000))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    text = Column(String(1000), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    # Define a relationship to the `User` table
+    # Relationship with User table
     user = relationship("User", back_populates="messages")

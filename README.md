@@ -23,8 +23,8 @@ The dataset consists of text messages labeled as "Spam" or "Ham" in three langua
 
 ### 3. Model Training
 
-- **Logistic Regression:** Train a Logistic Regression model using the preprocessed text data. Understand the principles of logistic regression to better implement and tune the model.
-  
+- **Multinomial Naïve Bayes:** Train a Multinomial Naïve Bayes model using the preprocessed text data. Understand the principles of MultinomialNB to better implement and tune the model.
+
 ### 4. Model Evaluation
 
 - **Accuracy:** Print the accuracy of the trained model.

@@ -2,12 +2,18 @@ from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Annotated
 from sqlalchemy.orm import Session
-import pickle
 import bcrypt
-from models import User, messages  # Ensure models are defined correctly
+from models import User, Messages  # Ensure models are defined correctly
 from database import SessionLocal, engine  # Adjust imports as needed
 from fastapi.middleware.cors import CORSMiddleware
+from celery import Celery
+from celery_worker import predict_spam
 
+celery_app = Celery(
+    "worker", 
+    backend="redis://localhost:6379/0", 
+    broker="redis://localhost:6379/0"
+)
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -22,15 +28,7 @@ app.add_middleware(
 
 # Create tables if they don't exist
 User.metadata.create_all(bind=engine)
-messages.metadata.create_all(bind=engine)
-
-# Load the trained spam classifier model
-with open("spam.pkl", "rb") as model_file:
-    spam_model = pickle.load(model_file)
-
-# Load the saved vectorizer
-with open("vectorizer.pkl", "rb") as vectorizer_file:
-    vectorizer = pickle.load(vectorizer_file)
+Messages.metadata.create_all(bind=engine)
 
 # Pydantic Models for input data
 class Message(BaseModel):
@@ -99,35 +97,24 @@ def signin(user: UserSignin, db: Session = Depends(get_db)):
 # Spam Prediction and Message Saving Endpoint
 @app.post("/predict")
 async def predict_message(message: Message, db: db_dependency):
-    text = message.text
-    user_id = message.user_id
-
-    # Check if the user exists
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == message.user_id).first()
+    
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 
-    # Transform the message using the vectorizer
-    message_features = vectorizer.transform([text])
-    prediction = spam_model.predict(message_features)
-    result = "Spam" if prediction[0] == 1 else "Ham"
-    
-    # Save the message with the prediction
-    db_message = messages(labels=result, text=text, user_id=user_id)
-    db.add(db_message)
-    db.commit()
-    db.refresh(db_message)
-    
-    return {"prediction": result}
+    # Enqueue task
+    task = predict_spam.delay(message.text, message.user_id)
 
-# Route to get all messages for a user (optional, if you still want this)
+    return {"task_id": task.id, "message": "Prediction task started"}
+
+# Route to get all Messages for a user
 @app.get("/users/{user_id}/messages")
 def get_user_messages(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return user.messages  # Ensure that User model has a relationship with messages
+    return user.messages  # Ensure that User model has a relationship with Messages
 
 # Start the server when running the script
 if __name__ == "__main__":
